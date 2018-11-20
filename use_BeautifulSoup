@@ -1,0 +1,47 @@
+#使用BeautifulSoup爬去当当网上的书籍
+from bs4 import BeautifulSoup
+from urllib.request import urlopen
+
+book_name = [] #书名
+book_link = [] #图书链接
+book_author = [] #图书作者
+book_price = [] #图书价格
+
+def onePage(url):
+    
+    html = urlopen(url) 
+    bsObj = BeautifulSoup(html,"lxml") #Beautiful Soup官方推荐使用lxml作为解析器
+    
+    #找到作者和网页链接
+    a_set = bsObj.findAll("a", {"dd_name":"单品图片"})
+    for a in a_set:
+       book_name.append(a["title"])
+       book_link.append(a["href"])
+    
+    #找到书名
+    author_set = bsObj.findAll("p",{"class":"search_book_author"})    
+    for i in author_set:
+        a = i.find("a") #找到p标签所包含内容中的第一个a标签的内容
+        book_author.append(a["title"]) #获取第一个a标签内容里的title的信息
+
+    #找到价格
+    price_set = bsObj.findAll("span",{"class":"search_now_price"})   
+    for span in price_set:
+        book_price.append(span.get_text())
+        
+    print(len(book_name)) #如果每个网页打印出的个数相等，则说明上面设定的查找内容没有选错，否则重写查找，注意"唯一性"
+    print(len(book_link)) 
+    print(len(book_author)) 
+    print(len(book_price)) 
+    
+#遍历多个网页
+for page in range(1,6):
+    commonUrl = "http://search.dangdang.com/?key=python&act=input&page_index=" 
+    newUrl = commonUrl + str(page) #观察网址，会发现第一页和第二页以及之后的网址，就是页数有差别
+    onePage(newUrl) #调用上面定义的函数，将newUrl传进去
+    
+from pandas.core.frame import DataFrame
+merge ={"书籍":book_name, "作者":book_author,"价格":book_price,"链接":book_link}
+
+data=DataFrame(merge) #将字典转换成为数据框
+data.to_csv('theresult.csv') 
